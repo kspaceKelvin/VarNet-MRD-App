@@ -36,5 +36,9 @@ RUN  apt-get remove git curl -y \
      && rm -rf /var/lib/apt/lists/* \
      && rm -rf /root/.cache/pip
 
+# Copy test data
+RUN mkdir -p /test_data
+COPY *test_data/t1_tse_R6.mrd /test_data
+
 # Set the starting directory so that code can use relative paths
 WORKDIR /opt/code/python-ismrmrd-server
