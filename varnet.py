@@ -17,9 +17,6 @@ from typing import Callable, Optional
 # Folder for debug output files
 debugFolder = "/tmp/share/debug"
 
-# Device for PyTorch inference
-torchDevice = 'cpu'
-
 def process(connection, config, metadata):
     logging.info("Config: \n%s", config)
 
@@ -95,6 +92,14 @@ def process_raw(group, connection, config, metadata):
     if not os.path.exists(debugFolder):
         os.makedirs(debugFolder)
         logging.debug("Created folder " + debugFolder + " for debug output files")
+
+    # Device for PyTorch inference
+    if torch.cuda.is_available():
+        logging.info("CUDA is available to PyTorch!")
+        torchDevice = 'cuda'
+    else:
+        logging.warning("CUDA is NOT available to PyTorch")
+        torchDevice = 'cpu'
 
     metadata.userParameters.userParameterLong[-1].name
 
