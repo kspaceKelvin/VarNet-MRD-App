@@ -130,31 +130,44 @@ def process_raw(group, connection, config, metadata):
 
     rawHead = [None]*(max(slis)+1)
 
-    # Retrospectively downsample for testing using config name like 'varnet_R8_ACS24'
-    doDownsample = False
-    reR   = re.search(r'(?<=_R)[\d]+',   config)
-    reAcs = re.search(r'(?<=_ACS)[\d]+', config)
+    # Retrospectively downsample for testing using config parameters
+    downsampleR = -1
+    downsampleAcs = -1
+
+    if ('parameters' in config):
+        if ('downsampleR' in config['parameters']):
+            downsampleR = int(config['parameters']['downsampleR'])
+
+        if ('downsampleAcs' in config['parameters']):
+            downsampleAcs = int(config['parameters']['downsampleAcs'])
 
     R      = -1
     offset = -1
     acs    = -1
 
-    if (reR is None) and (reAcs is not None):
-        # Keep the sampling rate and just change ACS, but we need to figure out what the sampling rate is
+    # if (reR is None) and (reAcs is not None):
+    if (downsampleAcs != -1) and (downsampleR == -1):
+        # Keep the acceleration rate and just change ACS, but we need to figure out what the acceleration rate is
         sortedLins = np.sort([acquisition.idx.kspace_encode_step_1 for acquisition in group if acquisition.idx.slice == 0])
         R = sortedLins[1]-sortedLins[0]
         offset = int(R/2)
-        acs = int(reAcs[0])
-        logging.info("Based on config %s, downsample data to R=%d (inferred), line offset=%d (inferred), ACS=%d", config, R, offset, acs)
+        acs = downsampleAcs
+        logging.info("Based on config, downsample data to R=%d (inferred), line offset=%d (inferred), ACS=%d", R, offset, acs)
 
-    elif (reR is not None) and (reAcs is not None):
-        R      = int(reR[0])
+    elif (downsampleAcs != -1) and (downsampleR != -1):
+        # Change both acceleration rate and ACS
+        R      = downsampleR
         offset = int(R/2)
-        acs    = int(reAcs[0])
-        logging.info("Based on config %s, downsample data to R=%d, ACS=%d", config, R, acs)
+        acs    = downsampleAcs
+        logging.info("Based on config, downsample data to R=%d, ACS=%d", R, acs)
 
     else:
-        logging.info("Based on config %s, not downsampling data", config)
+        # Figure out what the acceleration rate is
+        sortedLins = np.sort([acquisition.idx.kspace_encode_step_1 for acquisition in group if acquisition.idx.slice == 0])
+        inferR = sortedLins[1]-sortedLins[0]
+        inferOffset = int(inferR/2)
+        inferAcs = np.sum(np.diff(np.unique(sortedLins))==1) + 1
+        logging.info("Based on config, not downsampling data which is inferred to be sampled at R=%d, line offset=%d, ACS=%d", inferR, inferOffset, inferAcs)
 
     for acq, lin, sli in zip(group, lins, slis):
         centerLin = acq.idx.user[5]
@@ -175,11 +188,13 @@ def process_raw(group, connection, config, metadata):
 
     # Load pre-trained model weights: fastMRI End-to-End Variational Networks for Accelerated MRI Reconstruction Model
     # Sriram A et al. 2020. End-to-End Variational Networks for Accelerated MRI Reconstruction. https://doi.org/10.1007/978-3-030-59713-9_7
-    modelName = re.search(r'(?<=^varnet_)[^_]+$', config)
-    if (modelName is not None) and (modelName[0] == 'knee'):
-        state_dict_file = 'models/varnet_knee_leaderboard_state_dict.pt'
-    else:
-        state_dict_file = 'models/varnet_brain_leaderboard_state_dict.pt'
+    # Two model files are provided, but others can be selected:
+    # - varnet_brain_leaderboard_state_dict.pt
+    # - varnet_knee_leaderboard_state_dict.pt
+
+    state_dict_file = 'models/varnet_brain_leaderboard_state_dict.pt'
+    if ('parameters' in config) and ('model' in config['parameters']):
+        state_dict_file = 'models/' + config['parameters']['model']
 
     model = VarNet(num_cascades=12, pools=4, chans=18, sens_pools=4, sens_chans=8)
     model.load_state_dict(torch.load(state_dict_file, map_location=device))
