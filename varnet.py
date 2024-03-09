@@ -223,16 +223,36 @@ def process_raw(group, connection, config, metadata):
         logging.info(strProcessTime)
         connection.send_logging(constants.MRD_LOGGING_INFO, strProcessTime)
 
+        if not np.any(np.array(outputs[sli])):
+            logging.warning("Slice is all zeros!")
+
+        if np.all(np.isnan(np.array(outputs[sli]))):
+            logging.warning("Slice is all NaNs!")
+
     # img will have shape [sli RO PE]
     img = np.stack([out for out in outputs])
 
     logging.debug("Image data is size %s" % (img.shape,))
     np.save(debugFolder + "/" + "imgVarNet.npy", img)
 
-    # Normalize and convert to int16
-    img *= 32767/img.max()
-    img = np.around(img)
-    img = img.astype(np.int16)
+    if ('parameters' in config) and ('complexoutput' in config['parameters']) and \
+        ((config['parameters']['complexoutput'] == True) or (isinstance(config['parameters']['complexoutput'], str) and ('true' in config['parameters']['complexoutput'].lower()))):
+        # Complex images are requested
+        logging.info("Outputting complex images as requested by config")
+        img = img.astype(np.complex64)
+        img *= 1000
+    else:
+        # Determine max value (12 or 16 bit)
+        BitsStored = 12
+        if (mrdhelper.get_userParameterLong_value(metadata, "BitsStored") is not None):
+            BitsStored = mrdhelper.get_userParameterLong_value(metadata, "BitsStored")
+        maxVal = 2**BitsStored - 1
+
+        # Normalize and convert to int16
+        img = img.astype(np.float64)
+        img *= maxVal/img.max()
+        img = np.around(img)
+        img = img.astype(np.int16)
 
     # Measure processing time
     strProcessTime = "Total processing time: %.2f s" % (perf_counter()-tic)
