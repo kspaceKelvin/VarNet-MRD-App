@@ -271,6 +271,13 @@ def process_raw(group, connection, config, metadata):
         tmpMeta['WindowWidth']            = '32768'
         tmpMeta['Keep_image_geometry']    = 1
 
+        # Add image orientation directions to MetaAttributes if not already present
+        if tmpMeta.get('ImageRowDir') is None:
+            tmpMeta['ImageRowDir'] = ["{:.18f}".format(rawHead[sli].read_dir[0]), "{:.18f}".format(rawHead[sli].read_dir[1]), "{:.18f}".format(rawHead[sli].read_dir[2])]
+
+        if tmpMeta.get('ImageColumnDir') is None:
+            tmpMeta['ImageColumnDir'] = ["{:.18f}".format(rawHead[sli].phase_dir[0]), "{:.18f}".format(rawHead[sli].phase_dir[1]), "{:.18f}".format(rawHead[sli].phase_dir[2])]
+
         xml = tmpMeta.serialize()
         logging.debug("Image MetaAttributes: %s", xml)
         tmpImg.attribute_string = xml
