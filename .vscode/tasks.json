@@ -1,0 +1,23 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        // Generate raw data using generate_cartesian_shepp_logan_dataset.py
+        {
+            "label": "Generate raw data",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "/opt/code/python-ismrmrd-server/generate_cartesian_shepp_logan_dataset.py",
+                "-o", "/opt/code/python-ismrmrd-server/data/shepplogan_raw.mrd",
+            ],
+            "presentation": {
+                "showReuseMessage": false,
+                "focus": false,
+                "group": "client",
+            },
+            "problemMatcher": []
+        },
+    ]
+}

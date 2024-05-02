@@ -1,0 +1,67 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        // Start server
+        {
+            "name": "Start server",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "program": "/opt/code/python-ismrmrd-server/main.py",
+            "args": [
+                "-p", "9002",
+                "-d", "varnet",
+                // "-v",
+                // "-s"
+            ],
+            "console": "integratedTerminal",
+            "consoleTitle": "Server",
+            "justMyCode": false,
+            "env": {
+                // "PYTHONPATH": "${env:PATH};${workspaceFolder}"
+                "PYTHONPATH": "$PYTHONPATH:${workspaceFolder}"
+            }
+        },
+
+        // Run client
+        {
+            "name": "Run client",
+            "type": "python",
+            "request": "launch",
+            "program": "/opt/code/python-ismrmrd-server/client.py",
+            "args": [
+                "${workspaceFolder}/test_data/t1_tse_R6.mrd",
+                "-c", "varnet",
+                "-o", "${workspaceFolder}/out.mrd",
+            ],
+            "console": "integratedTerminal",
+            "consoleTitle": "Client",
+            "justMyCode": true,
+        },
+
+        // Run mrd2gif
+        {
+            "name": "mrd2gif",
+            "type": "python",
+            "request": "launch",
+            "program": "/opt/code/python-ismrmrd-server/mrd2gif.py",
+            "args": [
+                "${workspaceFolder}/out.mrd",
+            ],
+            "console": "integratedTerminal",
+            "consoleTitle": "Client",
+            "justMyCode": true,
+        },
+    ],
+    "compounds":
+    [
+        {
+            "name": "Server + client",
+            "configurations": ["Start server", "Run client"]
+        },
+    ]
+
+}
